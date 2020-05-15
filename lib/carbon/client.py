@@ -12,6 +12,8 @@ from carbon.util import pickle
 from carbon import instrumentation, log, pipeline, state
 from carbon.util import PluginRegistrar
 from carbon.util import enableTcpKeepAlive
+import redis
+import os
 
 try:
     from OpenSSL import SSL
@@ -30,6 +32,9 @@ except ImportError:
 
 SEND_QUEUE_LOW_WATERMARK = settings.MAX_QUEUE_SIZE * settings.QUEUE_LOW_WATERMARK_PCT
 
+REDIS_DEBUG = True if os.environ['REDIS_DEBUG'] == 'true' else False
+if REDIS_DEBUG:
+    REDIS_POOL = redis.ConnectionPool(host=os.environ["REDIS_HOST"], port=6379, db=0)
 
 class CarbonClientProtocol(object):
 
@@ -617,4 +622,7 @@ class RelayProcessor(pipeline.Processor):
 
   def process(self, metric, datapoint):
     state.client_manager.sendDatapoint(metric, datapoint)
+    if REDIS_DEBUG:
+        r = redis.Redis(connection_pool=REDIS_POOL)
+        r.zincrby("relay",1,metric)
     return pipeline.Processor.NO_OUTPUT

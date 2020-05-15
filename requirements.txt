@@ -3,3 +3,4 @@ git+git://github.com/graphite-project/whisper.git#egg=whisper
 txAMQP
 cachetools
 urllib3
+redis
